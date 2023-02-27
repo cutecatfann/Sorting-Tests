@@ -1,74 +1,88 @@
 import random
 import time
 import plotly.graph_objs as go
-from plotly.subplots import make_subplots
 
 
 def merge_sort(arr):
-    if len(arr) > 1:
-        mid = len(arr) // 2
-        left_half = arr[:mid]
-        right_half = arr[mid:]
+    if len(arr) <= 1:
+        return arr
 
-        merge_sort(left_half)
-        merge_sort(right_half)
+    mid = len(arr) // 2
+    left_half = arr[:mid]
+    right_half = arr[mid:]
 
-        i = j = k = 0
-        while i < len(left_half) and j < len(right_half):
-            if left_half[i] < right_half[j]:
-                arr[k] = left_half[i]
-                i += 1
-            else:
-                arr[k] = right_half[j]
-                j += 1
-            k += 1
+    left_half = merge_sort(left_half)
+    right_half = merge_sort(right_half)
 
-        while i < len(left_half):
-            arr[k] = left_half[i]
-            i += 1
-            k += 1
-
-        while j < len(right_half):
-            arr[k] = right_half[j]
-            j += 1
-            k += 1
+    return merge(left_half, right_half)
 
 
-def time_merge_sort(arr):
+def merge(left_half, right_half):
+    result = []
+    left_index = 0
+    right_index = 0
+
+    while left_index < len(left_half) and right_index < len(right_half):
+        if left_half[left_index] < right_half[right_index]:
+            result.append(left_half[left_index])
+            left_index += 1
+        else:
+            result.append(right_half[right_index])
+            right_index += 1
+
+    result += left_half[left_index:]
+    result += right_half[right_index:]
+
+    return result
+
+
+def insertion_sort(arr):
+    for i in range(1, len(arr)):
+        key = arr[i]
+        j = i - 1
+        while j >= 0 and key < arr[j]:
+            arr[j + 1] = arr[j]
+            j -= 1
+        arr[j + 1] = key
+    return arr
+
+
+def measure_runtime(sort_fn, arr):
     start_time = time.time()
-    merge_sort(arr)
+    sort_fn(arr)
     end_time = time.time()
     return end_time - start_time
 
 
-def generate_arrays(n):
-    ordered_arr = list(range(n))
-    reverse_arr = list(range(n))[::-1]
-    random_arr = [random.randint(0, n) for _ in range(n)]
-    return ordered_arr, reverse_arr, random_arr
+def generate_data(num_samples):
+    data = []
+    for i in range(num_samples):
+        arr = random.sample(range(1, num_samples * 10), i * 10)
+        data.append((i * 10, arr))
+    return data
 
 
-sizes = [10, 100, 1000, 10000]  # sizes of arrays to test
-colors = ['red', 'green', 'blue']  # colors to use for the different orderings
+def graph_runtimes(data):
+    merge_sort_times = []
+    insertion_sort_times = []
+    sizes = []
 
-fig = make_subplots(rows=1, cols=1, x_title='Input size',
-                    y_title='Time taken (seconds)')
+    for size, arr in data:
+        sizes.append(size)
+        merge_sort_time = measure_runtime(merge_sort, arr)
+        merge_sort_times.append(merge_sort_time)
+        insertion_sort_time = measure_runtime(insertion_sort, arr)
+        insertion_sort_times.append(insertion_sort_time)
 
-for i, size in enumerate(sizes):
-    ordered_arr, reverse_arr, random_arr = generate_arrays(size)
-    arrays = [ordered_arr, reverse_arr, random_arr]
+    trace1 = go.Scatter(x=sizes, y=merge_sort_times, name="Merge Sort")
+    trace2 = go.Scatter(x=sizes, y=insertion_sort_times, name="Insertion Sort")
+    layout = go.Layout(title="Sort Runtimes", xaxis=dict(
+        title="Array Size"), yaxis=dict(title="Time (s)"))
+    fig = go.Figure(data=[trace1, trace2], layout=layout)
+    fig.show()
 
-    for j, arr in enumerate(arrays):
-        time_taken = time_merge_sort(arr)
-        fig.add_trace(go.Scatter(x=[size], y=[
-                      time_taken], name=f'{size} {j}', mode='markers', marker_color=colors[j]))
-        if i > 0:
-            prev_size = sizes[i - 1]
-            prev_times = [fig.data[k].y[-1]
-                          for k in range(j + 3 * (i - 1), j + 3 * i)]
-            curr_times = [time_taken]
-            fig.add_trace(go.Scatter(
-                x=[prev_size, size], y=prev_times + curr_times, mode='lines', line_color=colors[j]))
 
-fig.update_layout(showlegend=True)
-fig.show()
+if __name__ == "__main__":
+    num_samples = 1000
+    data = generate_data(num_samples)
+    graph_runtimes(data)
