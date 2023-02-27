@@ -53,14 +53,21 @@ def measure_runtime(sort_fn, arr):
     end_time = time.time()
     return end_time - start_time
 
-
+"""
 def generate_data(num_samples):
     data = []
     for i in range(num_samples):
         arr = random.sample(range(1, num_samples * 10), i * 10)
         data.append((i * 10, arr))
     return data
+"""
 
+def generate_data(num_samples):
+    data = []
+    for i in range(num_samples+1):
+        arr = list(range(1, num_samples))
+        data.append((i * 10, arr))
+    return data
 
 def graph_runtimes(data):
     merge_sort_times = []
